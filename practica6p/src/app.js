@@ -1,25 +1,22 @@
-const mysql = require('mysql2');
+const express = require("express");
+const bodyParser = require("body-parser");
 
-// Crear la conexión a la base de datos
-const db = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME
-});
+const app = express();
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// Conectar a la base de datos
 db.connect((err) => {
   if (err) {
-    console.error('Error de conexión:', err);
-    // Salir de la aplicación
-    process.exit(1);
-    // o volver a intentar la conexión
-    // db.connect(retryConnection);
+    console.error("Error al conectar a la base de datos: ", err);
   } else {
-    console.log('Conectado a la base de datos MySQL');
+    console.log("Conexión exitosa a la base de datos");
   }
 });
 
-// Exportar la conexión para que pueda ser utilizada en otras partes de la aplicación
-module.exports = db;
+app.use("/alumnos", require("./routes/alumnos"));
+app.use("/profesores", require("./routes/profesores"));
+
+const PORT = process.env.PORT || 3300;
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
+});

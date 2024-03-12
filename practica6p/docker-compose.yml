@@ -2,11 +2,11 @@ version: '3.8'
 
 services:
   database:
-    container_name: express
+    container_name: database-express
     image: mysql:8.0
     environment:
       MYSQL_ROOT_PASSWORD: secret
-      MYSQL_DATABASE: database
+      MYSQL_DATABASE: express
       MYSQL_USER: user
       MYSQL_PASSWORD: password
     ports:
@@ -28,3 +28,5 @@ services:
 
 volumes:
   mysql-express:
+
+  
