@@ -1,0 +1,21 @@
+version: '3'
+
+#Definicion de servicios
+services:
+  mysql:
+    image: mysql
+    #ambiente para colocar las configuracion para conectarme a mi BD
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_DB_ROOT_PASSWORD}"
+      MYSQL_USER: "${MYSQL_DB_USERNAME}"
+      MYSQL_DATABASE: "${MYSQL_DB_NAME}"
+      MYSQL_PASSWORD: "${MYSQL_DB_PASSWORD}"
+      
+    #Volumen en my dokcer donde se guardar mis datos
+    volumes:
+      - ./mysql:/var/lib/mysql
+    ports:
+      - 3309:3306
+
+volumes:
+  mysql:

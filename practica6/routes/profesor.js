@@ -1,90 +1,87 @@
 const express = require("express");
+const bodyParser = require("body-parser");
+
 const app = express();
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-const dotenv = require("dotenv");
-dotenv.config();
+db.connect((err) => {
+  if (err) {
+    console.error("Error al conectar a la base de datos: ", err);
+  } else {
+    console.log("Conexión exitosa a la base de datos");
+  }
+});
 
-//conexión con la base de datos
-const {connection} = require("../config.db");
-
-// Mostrar todos los profesores
-app.get("/", (req, res) => {
-  connection.query("SELECT * FROM profesor", (error, results) => {
-    if (error) {
-      res.status(500).json({ error: "Error al obtener profesores" });
+// Todos los profesores
+app.get("/profesores", (req, res) => {
+  db.query("SELECT * FROM profesor", (err, result) => {
+    if (err) {
+      res.status(500).send("Error al obtener profesores");
     } else {
-      res.json(results);
+      res.json(result);
     }
   });
 });
 
-// Mostrar un profesor por ID
-app.get("/:id", (req, res) => {
+//buscar por id
+app.get("/profesores/:id", (req, res) => {
   const profesorId = req.params.id;
-  connection.query("SELECT * FROM profesor WHERE id = ?", [profesorId], (error, results) => {
-    if (error) {
-      res.status(500).json({ error: "Error al obtener el profesor" });
+  db.query("SELECT * FROM profesor WHERE id = ?", [profesorId], (err, result) => {
+    if (err) {
+      res.status(500).send(`Error al obtener profesor con ID ${profesorId}`);
+    } else if (result.length > 0) {
+      res.json(result[0]);
     } else {
-      if (results.length > 0) {
-        res.json(results[0]);
-      } else {
-        res.status(404).json({ mensaje: "Profesor no encontrado" });
-      }
+      res.status(404).send(`Profesor con ID ${profesorId} no encontrado`);
     }
   });
 });
 
-// Insertar un nuevo profesor
-app.post("/", (req, res) => {
-  const { nombre, apellido, fecha_nacimiento, direccion, telefono, codigo_postal, email, especialidad, profesorId } = req.body;
-  connection.query(
-    "INSERT INTO profesor (nombre, apellido, fecha_nacimiento, direccion, telefono, codigo_postal, email, especialidad, profesorId) VALUES (?, ?, ?, ?, ?, ?, ?,?,?)",
-    [nombre, apellido, fecha_nacimiento, direccion, telefono, codigo_postal, email, especialidad, profesorId],
-    (error, results) => {
-      if (error) {
-        res.status(500).json({ error: "Error al insertar el profesor" });
-      } else {
-        res.status(201).json({ mensaje: "Profesor insertado correctamente", id: results.insertId });
-      }
-    }
-  );
-});
-
-// Actualizar un profesor por ID
-app.put("/:id", (req, res) => {
-  const profesorId = req.params.id;
-  const { nombre, apellido, especialidad } = req.body;
-  connection.query(
-    "UPDATE profesor SET nombre = ?, apellido = ?,fecha_nacimiento =?,direccion = ?,telefono = ?,codigo_postal = ?, email= ?, especialidad = ? WHERE id = ?",
-    [nombre, apellido,fecha_nacimiento, direccion, telefono, codigo_postal, email, especialidad, profesorId],
-    (error, results) => {
-      if (error) {
-        res.status(500).json({ error: "Error al actualizar el profesor" });
-      } else {
-        if (results.affectedRows > 0) {
-          res.json({ mensaje: "Profesor actualizado correctamente" });
-        } else {
-          res.status(404).json({ mensaje: "Profesor no encontrado" });
-        }
-      }
-    }
-  );
-});
-
-// Eliminar un profesor por ID
-app.delete("/:id", (req, res) => {
-  const profesorId = req.params.id;
-  connection.query("DELETE FROM profesor WHERE id = ?", [profesorId], (error, results) => {
-    if (error) {
-      res.status(500).json({ error: "Error al eliminar el profesor" });
+// Crear
+app.post("/profesores", (req, res) => {
+  const profesor = req.body;
+  db.query("INSERT INTO profesor SET ?", profesor, (err, result) => {
+    if (err) {
+      res.status(500).send("Error al insertar profesor");
     } else {
-      if (results.affectedRows > 0) {
-        res.json({ mensaje: "Profesor eliminado correctamente" });
-      } else {
-        res.status(404).json({ mensaje: "Profesor no encontrado" });
-      }
+      res.status(201).send("Profesor insertado exitosamente");
     }
   });
 });
 
-module.exports = app;
+// Actualizar
+app.put("/profesores/:id", (req, res) => {
+  const profesorId = req.params.id;
+  const nuevoProfesor = req.body;
+  db.query("UPDATE profesor SET ? WHERE id = ?", [nuevoProfesor, profesorId], (err, result) => {
+    if (err) {
+      res.status(500).send(`Error al actualizar profesor con ID ${profesorId}`);
+    } else if (result.affectedRows > 0) {
+      res.send(`Profesor con ID ${profesorId} actualizado exitosamente`);
+    } else {
+      res.status(404).send(`Profesor con ID ${profesorId} no encontrado`);
+    }
+  });
+});
+
+// Eliminar
+app.delete("/profesores/:id", (req, res) => {
+  const profesorId = req.params.id;
+  db.query("DELETE FROM profesor WHERE id = ?", [profesorId], (err, result) => {
+    if (err) {
+      res.status(500).send(`Error al eliminar profesor con ID ${profesorId}`);
+    } else if (result.affectedRows > 0) {
+      res.send(`Profesor con ID ${profesorId} eliminado exitosamente`);
+    } else {
+      res.status(404).send(`Profesor con ID ${profesorId} no encontrado`);
+    }
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
+});
+
+module.exports = app; 

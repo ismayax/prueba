@@ -1,9 +1,9 @@
-version: '3.3'
+version: '3.8'
+
 services:
-  mysql:
+  database:
+    container_name: express
     image: mysql:8.0
-    volumes:
-      - mysql-data:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${ROOT_PASSWORD}
       MYSQL_DATABASE: ${DATABASE}
@@ -11,11 +11,20 @@ services:
       MYSQL_PASSWORD: ${PASSWORD}
     ports:
       - "3308:3306"
-    networks:
-      - mynetwork
+    volumes:
+      - mysql-express:/var/lib/mysql
 
-networks:
-  mynetwork:
+  node:
+    container_name: node
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./node:/var/www/node
+    depends_on:
+      - database
 
 volumes:
-  mysql-data:
+  mysql-express:

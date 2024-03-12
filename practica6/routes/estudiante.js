@@ -1,90 +1,87 @@
 const express = require("express");
+const bodyParser = require("body-parser");
+
 const app = express();
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-const dotenv = require("dotenv");
-dotenv.config();
+db.connect((err) => {
+  if (err) {
+    console.error("Error al conectar a la base de datos: ", err);
+  } else {
+    console.log("Conexión exitosa a la base de datos");
+  }
+});
 
-// Conexión con la base de datos
-const { connection } = require("../config.db");
-
-// Mostrar todos los estudiantes
-app.get("/", (req, res) => {
-  connection.query("SELECT * FROM estudiante", (error, results) => {
-    if (error) {
-      res.status(500).json({ error: "Error al obtener estudiantes" });
+// Todos los alumnos
+app.get("/alumnos", (req, res) => {
+  db.query("SELECT * FROM estudiante", (err, result) => {
+    if (err) {
+      res.status(500).send("Error al obtener los alumnos");
     } else {
-      res.json(results);
+      res.json(result);
     }
   });
 });
 
-// Mostrar un estudiante por ID
-app.get("/:id", (req, res) => {
+// Buscar por id
+app.get("/alumnos/:id", (req, res) => {
   const estudianteId = req.params.id;
-  connection.query("SELECT * FROM estudiante WHERE id = ?", [estudianteId], (error, results) => {
-    if (error) {
-      res.status(500).json({ error: "Error al obtener el estudiante" });
+  db.query("SELECT * FROM estudiante WHERE id = ?", [estudianteId], (err, result) => {
+    if (err) {
+      res.status(500).send(`Error al obtener estudiante con ID ${estudianteId}`);
+    } else if (result.length > 0) {
+      res.json(result[0]);
     } else {
-      if (results.length > 0) {
-        res.json(results[0]);
-      } else {
-        res.status(404).json({ mensaje: "Estudiante no encontrado" });
-      }
+      res.status(404).send(`Estudiante con ID ${estudianteId} no encontrado`);
     }
   });
 });
 
-// Insertar un nuevo estudiante
-app.post("/", (req, res) => {
-  const { nombre, apellido, fecha_nacimiento, direccion, telefono, codigo_postal, email } = req.body;
-  connection.query(
-    "INSERT INTO estudiante (nombre, apellido, fecha_nacimiento, direccion, telefono, codigo_postal, email) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    [nombre, apellido, fecha_nacimiento, direccion, telefono, codigo_postal, email],
-    (error, results) => {
-      if (error) {
-        res.status(500).json({ error: "Error al insertar el estudiante" });
-      } else {
-        res.status(201).json({ mensaje: "Estudiante insertado correctamente", id: results.insertId });
-      }
-    }
-  );
-});
-
-// Actualizar un estudiante por ID
-app.put("/:id", (req, res) => {
-  const estudianteId = req.params.id;
-  const { nombre, apellido, fecha_nacimiento, direccion, telefono, codigo_postal, email } = req.body;
-  connection.query(
-    "UPDATE estudiante SET nombre = ?, apellido = ?, fecha_nacimiento = ?, direccion = ?, telefono = ?, codigo_postal = ?, email = ? WHERE id = ?",
-    [nombre, apellido, fecha_nacimiento, direccion, telefono, codigo_postal, email, estudianteId],
-    (error, results) => {
-      if (error) {
-        res.status(500).json({ error: "Error al actualizar el estudiante" });
-      } else {
-        if (results.affectedRows > 0) {
-          res.json({ mensaje: "Estudiante actualizado correctamente" });
-        } else {
-          res.status(404).json({ mensaje: "Estudiante no encontrado" });
-        }
-      }
-    }
-  );
-});
-
-// Eliminar un estudiante por ID
-app.delete("/:id", (req, res) => {
-  const estudianteId = req.params.id;
-  connection.query("DELETE FROM estudiante WHERE id = ?", [estudianteId], (error, results) => {
-    if (error) {
-      res.status(500).json({ error: "Error al eliminar el estudiante" });
+// Crear
+app.post("/alumnos", (req, res) => {
+  const estudiante = req.body;
+  db.query("INSERT INTO estudiante SET ?", estudiante, (err, result) => {
+    if (err) {
+      res.status(500).send("Error al insertar estudiante");
     } else {
-      if (results.affectedRows > 0) {
-        res.json({ mensaje: "Estudiante eliminado correctamente" });
-      } else {
-        res.status(404).json({ mensaje: "Estudiante no encontrado" });
-      }
+      res.status(201).send("Estudiante insertado exitosamente");
     }
   });
 });
 
-module.exports = app;
+// Actualizar
+app.put("/alumnos/:id", (req, res) => {
+  const estudianteId = req.params.id;
+  const nuevoEstudiante = req.body;
+  db.query("UPDATE estudiante SET ? WHERE id = ?", [nuevoEstudiante, estudianteId], (err, result) => {
+    if (err) {
+      res.status(500).send(`Error al actualizar estudiante con ID ${estudianteId}`);
+    } else if (result.affectedRows > 0) {
+      res.send(`Estudiante con ID ${estudianteId} actualizado exitosamente`);
+    } else {
+      res.status(404).send(`Estudiante con ID ${estudianteId} no encontrado`);
+    }
+  });
+});
+
+// Eliminar 
+app.delete("/alumnos/:id", (req, res) => {
+  const estudianteId = req.params.id;
+  db.query("DELETE FROM estudiante WHERE id = ?", [estudianteId], (err, result) => {
+    if (err) {
+      res.status(500).send(`Error al eliminar estudiante con ID ${estudianteId}`);
+    } else if (result.affectedRows > 0) {
+      res.send(`Estudiante con ID ${estudianteId} eliminado exitosamente`);
+    } else {
+      res.status(404).send(`Estudiante con ID ${estudianteId} no encontrado`);
+    }
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
+});
+
+module.exports = app; 
